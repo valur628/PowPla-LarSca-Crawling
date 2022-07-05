@@ -1,5 +1,6 @@
 import os
 from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
 from pandas.io.html import read_html
 from selenium.webdriver.common.keys import Keys
 
@@ -8,6 +9,8 @@ import time
 import random
 import pandas as pd
 import numpy as np
+import base64
+import csv
 
 from chromewebdriver import generate_chrome
 from userdata import siteID, sitePW
@@ -24,10 +27,30 @@ def getMonthRange(year, month):
     return (last_day.day)
 
 
+def splitTimes():
+    elm = browser.find_element(
+        "xpath", '//*[@id="SELECT_DT"]')  # 현재 년도와 월 그리고 일 함께 가져오기
+    now_year_month = elm.get_attribute('value')  # elm에서 value만 빼내기
+    # value를 - 기준으로 나누고 정수로 변환
+    split_year_month = list(map(int, now_year_month.split('-')))
+    return (split_year_month)
+
+
 PROJECT_DIR = str(os.path.dirname(os.path.abspath(__file__)))
 DOWNLOAD_DIR = f'{PROJECT_DIR}/download'
 DATABASE_DIR = f'{PROJECT_DIR}/database'
 driver_path = f'{PROJECT_DIR}/lib/webDriver/'
+
+current_time =  datetime.datetime.now() #현재 시간
+for i in range()
+
+electricity_df = pd.DataFrame(electricity_list, columns=[''])
+
+electricity_table = '//*[@id="tableListChart"]/tbody'
+
+RANGEMONTH = 12  # 크롤링할 개월 수(끝나는 기간 아님)
+
+
 
 platform = sys.platform
 if platform == 'linux':
@@ -75,40 +98,47 @@ elm = browser.find_element(
     "xpath", '//a[@class="ui-state-default" and text()="16"]').click()  # 날짜 찾아 누르기
 time.sleep(1)
 
-elm = browser.find_element(
-    "xpath", '//*[@id="SELECT_DT"]')  #현재 년도와 월 그리고 일 함께 가져오기
-now_year_month = elm.get_attribute('value') #elm에서 value만 빼내기
-print(elm.get_attribute('value'))
-split_year_month = list(map(int, now_year_month.split('-'))) #value를 - 기준으로 나누고 정수로 변환
-print(split_year_month)
-
+split_year_month = splitTimes()
 elm = browser.find_element(
     "xpath", '//*[@id="txt"]/div[2]/div/p[1]/img').click()  # 날짜 선택 펼치기
 
-for i in range(1, 13):
+break_check = False
+
+for i in range(1, RANGEMONTH): #탐색이 이루어지는 개월 범위
     number_day = getMonthRange(split_year_month[0], split_year_month[1])
-    for j in range(1, number_day):
+    for j in range(1, number_day+1): #탐색이 이루어지는 요일 범위
         time.sleep(1)
+        
+        # pass_text = browser.find_element("xpath", '//td[@id="F_AP_QT"]').text
+        # if pass_text == "0.00 kWh":
+        #     break_check = True
+        #     break
+
         elm = browser.find_element(
-            "xpath", '//a[@class="ui-state-default" and text()="{j}"]').click()  # 날짜 찾아 누르기
+            "xpath", '//a[@class="ui-state-default" and text()="{0}"]'.format(str(j)))
+        ActionChains(browser).move_to_element(elm).perform()
+        elm = browser.find_element(
+            "xpath", '//a[@class="ui-state-default ui-state-hover" and text()="{0}"]'.format(str(j))).click()  # 날짜 찾아서 집어넣기
         elm = browser.find_element(
             "xpath", '//*[@id="txt"]/div[2]/div/p[2]/span[1]/a').click()  # 조회 버튼 누르기
         time.sleep(4)
+        #표 제작 시작
+        
+        #표 제작 종료
         elm = browser.find_element(
             "xpath", '//*[@id="txt"]/div[2]/div/p[1]/img').click()  # 날짜 선택 펼치기
-        
     elm = browser.find_element(
         "xpath", '//*[@id="ui-datepicker-div"]/div/a[2]/span').click()  # 다음 달 버튼 누르기
     elm = browser.find_element(
-        "xpath", '//a[@class="ui-state-default" and text()="1"]').click()  # 날짜 찾아 누르기
-    
-    elm = browser.find_element(
-        "xpath", '//*[@id="SELECT_DT"]')  #현재 년도와 월 그리고 일 함께 가져오기
-    now_year_month = elm.get_attribute('value') #elm에서 value만 빼내기
-    print(elm.get_attribute('value'))
-    split_year_month = list(map(int, now_year_month.split('-'))) #value를 - 기준으로 나누고 정수로 변환
-    print(split_year_month)
-    
+        "xpath", '//a[@class="ui-state-default" and text()="16"]').click()  # 날짜 찾아 누르기
+        
+    # if break_check == True:
+    #     elm = browser.find_element(
+    #         "xpath", '//*[@id="txt"]/div[2]/div/p[2]/span[1]/a').click()  # 조회 버튼 누르기
+    #     time.sleep(4)
+    #     break_check = False
+
+    split_year_month = splitTimes()
     elm = browser.find_element(
         "xpath", '//*[@id="txt"]/div[2]/div/p[1]/img').click()  # 날짜 선택 펼치기
     time.sleep(1)
