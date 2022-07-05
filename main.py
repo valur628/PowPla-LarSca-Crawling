@@ -61,8 +61,6 @@ for i in range(0, 24*60-60, 60):
 electricity_time_columns_60.append('24')
 print(electricity_time_columns_60)
 
-#electricity_df = pd.DataFrame(electricity_list, columns=electricity_time_columns_15)
-
 platform = sys.platform
 if platform == 'linux':
     print('시스템 플랫폼: 리눅스')
@@ -114,6 +112,8 @@ elm = browser.find_element(
     "xpath", '//*[@id="txt"]/div[2]/div/p[1]/img').click()  # 날짜 선택 펼치기
 
 break_check = False
+electricity_list = []
+electricity_df = pd.DataFrame(electricity_list, columns=electricity_time_columns_15)
 
 for i in range(1, RANGEMONTH):  # 탐색이 이루어지는 개월 범위
     number_day = getMonthRange(split_year_month[0], split_year_month[1])
@@ -140,13 +140,15 @@ for i in range(1, RANGEMONTH):  # 탐색이 이루어지는 개월 범위
         rows_15 = tbody_15.find_elements(By.TAG_NAME, "tr")
         print(splitTimes())
         for index, value in enumerate(rows_15):
+            head = value.find_elements(By.TAG_NAME, "th")[0]
             body = value.find_elements(By.TAG_NAME, "td")[0]
+            electricity_list.append(body.text)
             print(body.text)
         for index, value in enumerate(rows_15):
+            head = value.find_elements(By.TAG_NAME, "th")[1]
             body = value.find_elements(By.TAG_NAME, "td")[7]
+            electricity_list.append(body.text)
             print(body.text)
-        # electricity_data = browser.find_element(
-        #     "xpath", '//*[@id="txt"]/div[2]/div/p[2]/span[1]/a')
         # 표 제작 종료
         elm = browser.find_element(
             "xpath", '//*[@id="txt"]/div[2]/div/p[1]/img').click()  # 날짜 선택 펼치기
