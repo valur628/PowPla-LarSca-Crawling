@@ -48,16 +48,18 @@ driver_path = f'{PROJECT_DIR}/lib/webDriver/'
 
 electricity_time_columns_15 = []
 current_time = datetime.datetime(2020, 1, 1)
-for i in range(15, 24*60+15, 15):
+for i in range(15, 24*60, 15):
     current_time = current_time + datetime.timedelta(minutes=15)
     electricity_time_columns_15.append(current_time.strftime('%H:%M'))
+electricity_time_columns_15.append('24:00')
 print(electricity_time_columns_15)
 
 electricity_time_columns_60 = []
 current_time = datetime.datetime(2020, 1, 1)
-for i in range(0, 24*60, 60):
+for i in range(0, 24*60-60, 60):
     current_time = current_time + datetime.timedelta(minutes=60)
     electricity_time_columns_60.append(current_time.strftime('%H'))
+electricity_time_columns_60.append('24')
 print(electricity_time_columns_60)
 
 platform = sys.platform
@@ -114,10 +116,17 @@ elm = browser.find_element(
 
 break_check = False
 first_check = False
-electricity_list_15 = []
-electricity_df_15 = pd.DataFrame(index=electricity_time_columns_15)
+
+sum_60 = 0.0
+max_60 = 0.0
 electricity_list_60 = []
 electricity_df_60 = pd.DataFrame(index=electricity_time_columns_60)
+
+sum_15 = 0.0
+max_15 = 0.0
+electricity_list_15 = []
+electricity_list_cal_15 = []
+electricity_df_15 = pd.DataFrame(index=electricity_time_columns_15)
 
 for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
     number_day = getMonthRange(split_year_month[0], split_year_month[1])
@@ -147,14 +156,19 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
         table_60 = browser.find_element(By.ID, 'tableListHour')  # 60분짜리 테이블 경로
         tbody_60 = table_60.find_element(By.TAG_NAME, "tbody")
         rows_60 = tbody_60.find_elements(By.TAG_NAME, "tr")
+        
         for index, value in enumerate(rows_60):
             head = value.find_elements(By.TAG_NAME, "th")[0]
             body = value.find_elements(By.TAG_NAME, "td")[0]
-            electricity_list_60.append(body.text)
+            cells = float(body.text.replace(",", ""))
+            electricity_list_60.append(cells)
+            sum_60 += cells
         for index, value in enumerate(rows_60):
             head = value.find_elements(By.TAG_NAME, "th")[1]
             body = value.find_elements(By.TAG_NAME, "td")[7]
-            electricity_list_60.append(body.text)
+            cells = float(body.text.replace(",", ""))
+            electricity_list_60.append(cells)
+            sum_60 += cells
         elm_day = browser.find_element(
             "xpath", '//*[@id="SELECT_DT"]')  # 현재 년도와 월 그리고 일 함께 가져오기
         now_year_month_day = elm_day.get_attribute('value')  # elm에서 value만 빼내기
@@ -162,27 +176,69 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
         electricity_df_60[now_year_month_day] = electricity_list_60
         print(electricity_df_60)
         electricity_list_60.clear()
-
+        sum_60 = 0.0
+        
+        time.sleep(1)
         # 15분 단위 테이블
         table_15 = browser.find_element(
             By.ID, 'tableListChart')  # 15분짜리 테이블 경로
         tbody_15 = table_15.find_element(By.TAG_NAME, "tbody")
         rows_15 = tbody_15.find_elements(By.TAG_NAME, "tr")
+        
+        f = 1
+        four_sum = 0.0
+        four_max = 0.0
+        max_temp = []
         for index, value in enumerate(rows_15):
             head = value.find_elements(By.TAG_NAME, "th")[0]
             body = value.find_elements(By.TAG_NAME, "td")[0]
-            electricity_list_15.append(body.text)
+            cells = float(body.text.replace(",", ""))
+            electricity_list_15.append(cells)
+            sum_15 += cells
+            four_sum += cells
+            max_temp.append(cells)
+            f += 1
+            if f>4:
+                four_max = max(max_temp)
+                electricity_list_cal_15.append(round(four_sum, 2))
+                electricity_list_cal_15.append("<-SUM")
+                electricity_list_cal_15.append(four_max*4)
+                electricity_list_cal_15.append("<-MAX")
+                f = 1
+                four_sum = 0.0
+                four_max = 0.0
+                max_temp.clear()
+
         for index, value in enumerate(rows_15):
             head = value.find_elements(By.TAG_NAME, "th")[1]
             body = value.find_elements(By.TAG_NAME, "td")[7]
-            electricity_list_15.append(body.text)
+            cells = float(body.text.replace(",", ""))
+            electricity_list_15.append(cells)
+            sum_15 += cells
+            four_sum += cells
+            max_temp.append(cells)
+            f += 1
+            if f>4:
+                four_max = max(max_temp)
+                electricity_list_cal_15.append(round(four_sum, 2))
+                electricity_list_cal_15.append("<-SUM")
+                electricity_list_cal_15.append(four_max*4)
+                electricity_list_cal_15.append("<-MAX")
+                f = 1
+                four_sum = 0.0
+                four_max = 0.0
+                max_temp.clear()
+                
         elm_day = browser.find_element(
             "xpath", '//*[@id="SELECT_DT"]')  # 현재 년도와 월 그리고 일 함께 가져오기
         now_year_month_day = elm_day.get_attribute('value')  # elm에서 value만 빼내기
         print(now_year_month_day)
         electricity_df_15[now_year_month_day] = electricity_list_15
+        electricity_df_15['{0} | calculations'.format(now_year_month_day)] = electricity_list_cal_15 #4개당 계산값 날릴일 있으면 여기 날릴 것
         print(electricity_df_15)
         electricity_list_15.clear()
+        electricity_list_cal_15.clear()
+        sum_15 = 0.0
         # 표 제작 종료
         elm = browser.find_element(
             "xpath", '//*[@id="txt"]/div[2]/div/p[1]/img').click()  # 날짜 선택 펼치기
@@ -202,16 +258,26 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
     elm = browser.find_element(
         "xpath", '//*[@id="txt"]/div[2]/div/p[1]/img').click()  # 날짜 선택 펼치기
     time.sleep(1)
+    
+    electricity_df_60_transpose = electricity_df_60.transpose()
+    electricity_df_15_transpose = electricity_df_15.transpose()
+
+    with pd.ExcelWriter('database/__electDataTEMP.xlsx', mode='w', engine='openpyxl') as writer:
+            electricity_df_60_transpose.to_excel(writer, index=True, sheet_name='hour_1')
+            electricity_df_15_transpose.to_excel(writer, index=True, sheet_name='minute_15')
+    time.sleep(1)
 end_days = splitTimes()
 first_days_str = "".join(map(str, first_days))
 end_days_str = "".join(map(str, end_days))
 
-electricity_df_15_transpose = electricity_df_15.transpose()
+
 electricity_df_60_transpose = electricity_df_60.transpose()
-electricity_df_15_transpose.to_csv("database/electData__{0}_{1}.csv".format(
-    first_days_str, end_days_str), mode='w', sheet_name='minute_15')
-electricity_df_60_transpose.to_csv("database/electData__{0}_{1}.csv".format(
-    first_days_str, end_days_str), mode='w', sheet_name='hour_1')
+electricity_df_15_transpose = electricity_df_15.transpose()
+
+with pd.ExcelWriter('database/electData__{0}_{1}.xlsx'.format(
+    first_days_str, end_days_str), mode='w', engine='openpyxl') as writer:
+        electricity_df_60_transpose.to_excel(writer, index=True, sheet_name='hour_1')
+        electricity_df_15_transpose.to_excel(writer, index=True, sheet_name='minute_15')
 print("작업 종료")
 time.sleep(10)
 # time.sleep(7 + random.randrange(1, 8))
