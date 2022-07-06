@@ -3,4 +3,5 @@
 userdata.py
 
 # Folder
-database/
+database/**
+__pycache__/**
