@@ -4,7 +4,7 @@ import numpy as np
 import atexit
 from selenium import webdriver
 
-def _enable_download_in_headless_chrome(driver: webdriver, download_dir: str):
+def download_headless_chrome(driver: webdriver, download_dir: str):
         driver.command_executor._commands["send_command"] = ("POST", '/session/$sessionId/chromium/send_command')
 
         params = {
@@ -17,7 +17,7 @@ def _enable_download_in_headless_chrome(driver: webdriver, download_dir: str):
         driver.execute("send_command", params)
 
 
-def _close_chrome(chrome: webdriver):
+def close_chrome(chrome: webdriver):
     def close():
         chrome.close()
     return close
@@ -42,8 +42,8 @@ def generate_chrome(
     browser = webdriver.Chrome(executable_path=driver_path, options=options)
 
     if headless:
-        _enable_download_in_headless_chrome(browser, download_path)
+        download_headless_chrome(browser, download_path)
 
-    atexit.register(_close_chrome(browser))
+    atexit.register(close_chrome(browser))
 
     return browser
