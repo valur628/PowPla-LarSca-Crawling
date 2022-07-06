@@ -1,3 +1,4 @@
+import gc
 import os
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
@@ -21,6 +22,11 @@ import datetime
 from datetime import timedelta
 from dateutil import relativedelta
 
+SELECTYEAR = 2022  # 크롤링이 시작될 년 선택 - 기본값 2022
+RANGEMONTH = 4  # 크롤링할 개월 수(끝나는 기간 아님) - 기본값 12
+SELECTMONTH = 3  # 크롤링이 시작될 월 선택 - 기본값 3
+STARTDAY = 1  # 크롤링이 시작되는 날 - 기본값 1
+
 
 def getMonthRange(year, month):
     this_month = datetime.datetime(year=year, month=month, day=1).date()
@@ -37,9 +43,6 @@ def splitTimes():
     split_year_month = list(map(int, now_year_month.split('-')))
     return (split_year_month)
 
-
-RANGEMONTH = 4  # 크롤링할 개월 수(끝나는 기간 아님) - 기본값 12
-STARTDAY = 1  # 크롤링이 시작되는 날 - 기본값 1
 
 PROJECT_DIR = str(os.path.dirname(os.path.abspath(__file__)))
 DOWNLOAD_DIR = f'{PROJECT_DIR}/download'
@@ -111,14 +114,24 @@ print("해당 메뉴로 이동")
 
 elm = browser.find_element(
     "xpath", '//*[@id="txt"]/div[2]/div/p[1]/img').click()  # 날짜 선택 펼치기
-print("초기화 작업 진행...")
+time.sleep(0.30 + (random.randrange(10, 50)/100))
+print("초기화 작업 진행 중...")
 
-# elm = browser.find_element(
-#     "xpath", '//*[@id="ui-datepicker-div"]/div/div/select[1]/option[1]').click()  # 년도 찾아 누르기
+date_today = datetime.date.today()
+year_today = date_today.strftime("%Y")
+day_today = date_today.strftime("%D")
+
+if str(SELECTYEAR) != str(year_today):
+    elm = browser.find_element(
+        "xpath", '//option[@value="{0}"]'.format(str(SELECTYEAR))).click()  # 년도 찾아 누르기
 elm = browser.find_element(
-    "xpath", '//*[@id="ui-datepicker-div"]/div/div/select[2]/option[3]').click()  # 월 찾아 누르기
-elm = browser.find_element(
-    "xpath", '//a[@class="ui-state-default" and text()="16"]').click()  # 날짜 찾아 누르기
+    "xpath", '//*[@id="ui-datepicker-div"]/div/div/select[2]/option[{0}]'.format(str(SELECTMONTH))).click()  # 월 찾아 누르기
+if str(16) != str(day_today):
+    elm = browser.find_element(
+        "xpath", '//a[@class="ui-state-default" and text()="16"]').click()  # 날짜 찾아 누르기
+else:
+    elm = browser.find_element(
+        "xpath", '//a[@class="ui-state-default" and text()="21"]').click()  # 날짜 찾아 누르기
 time.sleep(1.00 + (random.randrange(1, 100)/100))
 
 first_days = []
@@ -133,20 +146,25 @@ first_check = False
 sum_60 = 0.0
 max_60 = 0.0
 electricity_list_60 = []
-electricity_df_60 = pd.DataFrame(index=electricity_time_columns_60)
 
 sum_15 = 0.0
 max_15 = 0.0
 electricity_list_15 = []
 electricity_list_sum_15 = []
 electricity_list_max_15 = []
-electricity_df_15 = pd.DataFrame(index=electricity_time_columns_15)
+
+electricity_df_60_transpose = pd.DataFrame(
+    index=electricity_time_columns_60).transpose()
+electricity_df_15_transpose = pd.DataFrame(
+    index=electricity_time_columns_15).transpose()
 print("초기화 작업 완료")
 
 for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
+    electricity_df_60 = pd.DataFrame(index=electricity_time_columns_60)
+    electricity_df_15 = pd.DataFrame(index=electricity_time_columns_15)
     number_day = getMonthRange(split_year_month[0], split_year_month[1])
     for j in range(STARTDAY, number_day+1):  # 탐색이 이루어지는 요일 범위
-        time.sleep(2.00 + (random.randrange(10, 100)/100))
+        time.sleep(4.00 + (random.randrange(1, 200)/100))
 
         elm = browser.find_element(
             "xpath", '//a[@class="ui-state-default" and text()="{0}"]'.format(str(j)))
@@ -156,35 +174,35 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
         elm = browser.find_element(
             "xpath", '//*[@id="txt"]/div[2]/div/p[2]/span[1]/a').click()  # 조회 버튼 누르기
         print("다음 날로 이동")
-        
-        time.sleep(2.00 + (random.randrange(10, 100)/100))
+
+        time.sleep(3.00 + (random.randrange(1, 150)/100))
         pass_text = browser.find_element("xpath", '//td[@id="F_AP_QT"]').text
         if pass_text == "0.00 kWh":
             elm = browser.find_element(
-            "xpath", '//*[@id="txt"]/div[2]/div/p[1]/img').click()  # 날짜 선택 펼치기
+                "xpath", '//*[@id="txt"]/div[2]/div/p[1]/img').click()  # 날짜 선택 펼치기
             print("해당 날짜 데이터 없음")
             continue
-        time.sleep(3.00 + (random.randrange(10, 150)/100))
 
         if first_check == False:
             first_days = splitTimes()
             first_check = True
-            
+
         elm_day = browser.find_element(
             "xpath", '//*[@id="SELECT_DT"]')  # 현재 년도와 월 그리고 일 함께 가져오기
         now_year_month_day = elm_day.get_attribute('value')  # elm에서 value만 빼내기
-        print(now_year_month_day)
-        print("일일 작업 시작")
+        print("==========[ {0} ]==========".format(str(now_year_month_day)))
+        print("일일, 작업 시작")
 
         # 표 제작 시작
         # 1시간 단위 테이블
-        print("1시간 단위 테이블 작업 시작")
+        print("1시간 단위 테이블, 작업 시작")
         table_60 = browser.find_element(By.ID, 'tableListHour')  # 60분짜리 테이블 경로
         tbody_60 = table_60.find_element(By.TAG_NAME, "tbody")
         rows_60 = tbody_60.find_elements(By.TAG_NAME, "tr")
-        
+
         max_temp = []
         total_max = 0.0
+        print("1시간 단위 테이블, 전반부 연산")
         for index, value in enumerate(rows_60):
             head = value.find_elements(By.TAG_NAME, "th")[0]
             body = value.find_elements(By.TAG_NAME, "td")[0]
@@ -192,6 +210,7 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
             electricity_list_60.append(cells)
             max_temp.append(cells)
             sum_60 += cells
+        print("1시간 단위 테이블, 후반부 연산")
         for index, value in enumerate(rows_60):
             head = value.find_elements(By.TAG_NAME, "th")[1]
             body = value.find_elements(By.TAG_NAME, "td")[7]
@@ -199,33 +218,35 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
             electricity_list_60.append(cells)
             max_temp.append(cells)
             sum_60 += cells
+        print("1시간 단위 테이블, 추가 연산")
         total_max = max(max_temp)
         electricity_list_60.append("")
-        electricity_list_60.append(sum_60) #하루 합계
-        electricity_list_60.append(sum_60/24) #하루 평균
-        electricity_list_60.append(total_max) #하루 최대값
-        electricity_list_60.append(total_max*4) #하루 최대값 * 4
+        electricity_list_60.append(sum_60)  # 하루 합계
+        electricity_list_60.append(sum_60/24)  # 하루 평균
+        electricity_list_60.append(total_max)  # 하루 최대값
+        electricity_list_60.append(total_max*4)  # 하루 최대값 * 4
         # print(now_year_month_day)
         electricity_df_60[now_year_month_day] = electricity_list_60
         # print(electricity_df_60)
         electricity_list_60.clear()
         max_temp.clear()
         sum_60 = 0.0
-        print("1시간 단위 테이블 작업 완료")
-        
+        print("1시간 단위 테이블, 작업 완료")
+
         time.sleep(1.00 + (random.randrange(1, 50)/100))
         # 15분 단위 테이블
-        print("15분 단위 테이블 작업 시작")
+        print("15분 단위 테이블, 작업 시작")
         table_15 = browser.find_element(
             By.ID, 'tableListChart')  # 15분짜리 테이블 경로
         tbody_15 = table_15.find_element(By.TAG_NAME, "tbody")
         rows_15 = tbody_15.find_elements(By.TAG_NAME, "tr")
-        
+
         f = 1
         four_sum = 0.0
         four_max = 0.0
         max_temp = []
         total_max = 0.0
+        print("15분 단위 테이블, 전반부 연산")
         for index, value in enumerate(rows_15):
             head = value.find_elements(By.TAG_NAME, "th")[0]
             body = value.find_elements(By.TAG_NAME, "td")[0]
@@ -235,22 +256,20 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
             four_sum += cells
             max_temp.append(cells)
             f += 1
-            if f>4:
+            if f > 4:
                 four_max = max(max_temp)
                 total_max = max(four_max, total_max)
                 electricity_list_sum_15.append(round(four_sum, 2))
-                electricity_list_sum_15.append("")
-                electricity_list_sum_15.append("")
-                electricity_list_sum_15.append("")
                 electricity_list_max_15.append(four_max*4)
-                electricity_list_max_15.append("")
-                electricity_list_max_15.append("")
-                electricity_list_max_15.append("")
+                for p in range(3):
+                    electricity_list_sum_15.append("")
+                    electricity_list_max_15.append("")
                 f = 1
                 four_sum = 0.0
                 four_max = 0.0
                 max_temp.clear()
 
+        print("15분 단위 테이블, 후반부 연산")
         for index, value in enumerate(rows_15):
             head = value.find_elements(By.TAG_NAME, "th")[1]
             body = value.find_elements(By.TAG_NAME, "td")[7]
@@ -260,83 +279,83 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
             four_sum += cells
             max_temp.append(cells)
             f += 1
-            if f>4:
+            if f > 4:
                 four_max = max(max_temp)
                 total_max = max(four_max, total_max)
                 electricity_list_sum_15.append(round(four_sum, 2))
-                electricity_list_sum_15.append("")
-                electricity_list_sum_15.append("")
-                electricity_list_sum_15.append("")
                 electricity_list_max_15.append(four_max*4)
-                electricity_list_max_15.append("")
-                electricity_list_max_15.append("")
-                electricity_list_max_15.append("")
+                for p in range(3):
+                    electricity_list_sum_15.append("")
+                    electricity_list_max_15.append("")
                 f = 1
                 four_sum = 0.0
                 four_max = 0.0
                 max_temp.clear()
+        print("15분 단위 테이블, 추가 연산")
         electricity_list_15.append("")
-        electricity_list_15.append(sum_15) #하루 합계
-        electricity_list_15.append(sum_15/((24*60)/15)) #하루 평균
-        electricity_list_15.append(total_max) #하루 최대값
-        electricity_list_15.append(total_max*4) #하루 최대값 * 4
+        electricity_list_15.append(sum_15)  # 하루 합계
+        electricity_list_15.append(sum_15/((24*60)/15))  # 하루 평균
+        electricity_list_15.append(total_max)  # 하루 최대값
+        electricity_list_15.append(total_max*4)  # 하루 최대값 * 4
         for p in range(5):
             electricity_list_sum_15.append("")
             electricity_list_max_15.append("")
         # print(now_year_month_day)
         electricity_df_15[now_year_month_day] = electricity_list_15
-        electricity_df_15['{0} | SUM'.format(now_year_month_day)] = electricity_list_sum_15 #4개당 계산값 날릴일 있으면 여기 날릴 것
-        electricity_df_15['{0} | MAX'.format(now_year_month_day)] = electricity_list_max_15 #4개당 계산값 날릴일 있으면 여기 날릴 것
+        electricity_df_15['{0} | SUM'.format(
+            now_year_month_day)] = electricity_list_sum_15  # 4개당 계산값 날릴일 있으면 여기 날릴 것
+        electricity_df_15['{0} | MAX'.format(
+            now_year_month_day)] = electricity_list_max_15  # 4개당 계산값 날릴일 있으면 여기 날릴 것
         # print(electricity_df_15)
         electricity_list_15.clear()
         electricity_list_sum_15.clear()
         electricity_list_max_15.clear()
         total_max = 0.0
         sum_15 = 0.0
-        print("15분 단위 테이블 작업 완료")
+        print("15분 단위 테이블, 작업 완료")
         # 표 제작 종료
         elm = browser.find_element(
             "xpath", '//*[@id="txt"]/div[2]/div/p[1]/img').click()  # 날짜 선택 펼치기
-        print("진행 완료")
-
+        print("일일, 작업 완료")
+    end_days = splitTimes()
+    print("다음 달로 이동")
     elm = browser.find_element(
         "xpath", '//*[@id="ui-datepicker-div"]/div/a[2]/span').click()  # 다음 달 버튼 누르기
     elm = browser.find_element(
         "xpath", '//a[@class="ui-state-default" and text()="16"]').click()  # 날짜 찾아 누르기
-    print("다음 달로 이동")
 
-    # if continue_check == True:
-    #     elm = browser.find_element(
-    #         "xpath", '//*[@id="txt"]/div[2]/div/p[2]/span[1]/a').click()  # 조회 버튼 누르기
-    #     time.sleep(4)
-    #     continue_check = False
-
+    print("월간, 연산 작업")
     split_year_month = splitTimes()
     elm = browser.find_element(
         "xpath", '//*[@id="txt"]/div[2]/div/p[1]/img').click()  # 날짜 선택 펼치기
     time.sleep(1.00 + (random.randrange(1, 50)/100))
-    
-    electricity_df_60_transpose = electricity_df_60.transpose()
-    electricity_df_15_transpose = electricity_df_15.transpose()
 
+    electricity_df_60_transpose = pd.concat(
+        [electricity_df_60_transpose, electricity_df_60.transpose()])
+    electricity_df_15_transpose = pd.concat(
+        [electricity_df_15_transpose, electricity_df_15.transpose()])
+
+    del [[electricity_df_60, electricity_df_15]]
+    gc.collect()
+
+    print("월간, 임시 데이터 저장 중...")
     with pd.ExcelWriter('database/__electDataTEMP.xlsx', mode='w', engine='openpyxl') as writer:
-            electricity_df_60_transpose.to_excel(writer, index=True, sheet_name='hour_1')
-            electricity_df_15_transpose.to_excel(writer, index=True, sheet_name='minute_15')
-    print("월간 임시 데이터 저장")
+        electricity_df_60_transpose.to_excel(
+            writer, index=True, sheet_name='hour_1')
+        electricity_df_15_transpose.to_excel(
+            writer, index=True, sheet_name='minute_15')
+    print("월간, 임시 데이터 저장 완료")
     time.sleep(1.00 + (random.randrange(1, 50)/100))
-end_days = splitTimes()
 first_days_str = "".join(map(str, first_days))
 end_days_str = "".join(map(str, end_days))
 
-
-electricity_df_60_transpose = electricity_df_60.transpose()
-electricity_df_15_transpose = electricity_df_15.transpose()
-
+print("최종 데이터 저장 중...")
 with pd.ExcelWriter('database/electData__{0}_{1}.xlsx'.format(
-    first_days_str, end_days_str), mode='w', engine='openpyxl') as writer:
-        electricity_df_60_transpose.to_excel(writer, index=True, sheet_name='hour_1')
-        electricity_df_15_transpose.to_excel(writer, index=True, sheet_name='minute_15')
-print("최종 데이터 저장")
-print("작업 종료")
+        first_days_str, end_days_str), mode='w', engine='openpyxl') as writer:
+    electricity_df_60_transpose.to_excel(
+        writer, index=True, sheet_name='hour_1')
+    electricity_df_15_transpose.to_excel(
+        writer, index=True, sheet_name='minute_15')
+print("최종 데이터 저장 완료")
+print("작업 종료, 10초 후 완전 종료")
 time.sleep(10.00)
-# time.sleep(7 + random.randrange(1, 8))
