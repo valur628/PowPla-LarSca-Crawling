@@ -1,4 +1,4 @@
-# python 3.10, pip, numpy, pandas, selenium, openpyxl 다운로드 및 업그레이드 필수
+# python 3.10, pip, pandas, selenium, openpyxl 다운로드 및 업그레이드 필수
 # [userdata.py] 라는 이름으로 main과 같은 폴더에 py 파일 생성
 # 그리고 파일 내에 아래 같은 형태로 siteURL, siteID, sitePW 변수 추가
 #siteURL = '파워플래너 intro 주소'
@@ -11,7 +11,6 @@ import gc
 import time
 import random
 import pandas as pd
-import numpy as np
 import datetime
 
 from multiprocessing import Pool
