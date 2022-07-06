@@ -4,6 +4,7 @@
 #siteURL = '파워플래너 intro 주소'
 #siteID = '사이트 아이디'
 #sitePW = '사이트 비밀번호'
+#프로그램이 제어하는 크로미움 브라우저에 손을 대는 것을 비권장합니다.
 
 import os
 import sys
@@ -26,9 +27,9 @@ from userdata import siteURL, siteID, sitePW
 from datetime import timedelta
 from dateutil import relativedelta
 
-SELECTYEAR = 2022  # 크롤링이 시작될 년 선택 - 기본값 2022
-RANGEMONTH = 5  # 크롤링할 개월 수(끝나는 기간 아님) - 기본값 12
-SELECTMONTH = 3  # 크롤링이 시작될 월 선택 - 기본값 3
+SELECTYEAR = 2021  # 크롤링이 시작될 년 선택 - 기본값 2022
+RANGEMONTH = 12  # 크롤링할 개월 수(끝나는 기간 아님) - 기본값 12
+SELECTMONTH = 6  # 크롤링이 시작될 월 선택 - 기본값 3
 STARTDAY = 1  # 크롤링이 시작되는 날 - 기본값 1
 
 
