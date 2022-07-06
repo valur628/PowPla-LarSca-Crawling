@@ -27,9 +27,9 @@ from datetime import timedelta
 from dateutil import relativedelta
 
 SELECTYEAR = 2022  # 크롤링이 시작될 년 선택 - 기본값 2022
-RANGEMONTH = 3  # 크롤링할 개월 수(끝나는 기간 아님) - 기본값 12
+RANGEMONTH = 5  # 크롤링할 개월 수(끝나는 기간 아님) - 기본값 12
 SELECTMONTH = 3  # 크롤링이 시작될 월 선택 - 기본값 3
-STARTDAY = 28  # 크롤링이 시작되는 날 - 기본값 1
+STARTDAY = 1  # 크롤링이 시작되는 날 - 기본값 1
 
 
 def getMonthRange(year, month):
