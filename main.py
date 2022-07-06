@@ -1,5 +1,5 @@
-# pip, numpy, pandas, selenium, openpyxl 다운로드 및 업그레이드 필수
-# [userdata.py] 라는 이름으로 main과 같은 폴더에 py 파일 생성.
+# python 3.10, pip, numpy, pandas, selenium, openpyxl 다운로드 및 업그레이드 필수
+# [userdata.py] 라는 이름으로 main과 같은 폴더에 py 파일 생성
 # 그리고 파일 내에 아래 같은 형태로 siteURL, siteID, sitePW 변수 추가
 #siteURL = '파워플래너 intro 주소'
 #siteID = '사이트 아이디'
@@ -29,7 +29,7 @@ from dateutil import relativedelta
 SELECTYEAR = 2022  # 크롤링이 시작될 년 선택 - 기본값 2022
 RANGEMONTH = 3  # 크롤링할 개월 수(끝나는 기간 아님) - 기본값 12
 SELECTMONTH = 3  # 크롤링이 시작될 월 선택 - 기본값 3
-STARTDAY = 29  # 크롤링이 시작되는 날 - 기본값 1
+STARTDAY = 28  # 크롤링이 시작되는 날 - 기본값 1
 
 
 def getMonthRange(year, month):
@@ -233,9 +233,7 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
         electricity_list_60.append(sum_60/24)  # 하루 평균
         electricity_list_60.append(total_max)  # 하루 최대값
         electricity_list_60.append(total_max*4)  # 하루 최대값 * 4
-        # print(now_year_month_day)
         electricity_df_60[now_year_month_day] = electricity_list_60
-        # print(electricity_df_60)
         electricity_list_60.clear()
         max_temp.clear()
         sum_60 = 0.0
