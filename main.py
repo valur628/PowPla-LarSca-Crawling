@@ -21,8 +21,11 @@ from pandas.io.html import read_html
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 
-from chromewebdriver import generate_chrome
-from userdata import siteURL, siteID, sitePW
+from core.chromewebdriver import generate_chrome
+from core.dataUser import siteURL, siteID, sitePW
+from core.dataDirectory import *
+from core.newExplore import *
+
 
 from datetime import timedelta
 from dateutil import relativedelta
@@ -33,29 +36,16 @@ SELECTMONTH = 6  # 크롤링이 시작될 월 선택 - 기본값 3
 STARTDAY = 1  # 크롤링이 시작되는 날 - 기본값 1
 
 
-def getMonthRange(year, month):
-    this_month = datetime.datetime(year=year, month=month, day=1).date()
-    next_month = this_month + relativedelta.relativedelta(months=1)
-    last_day = next_month - timedelta(days=1)
-    return (last_day.day)
-
-
-def splitTimes():
-    elm = browser.find_element(
-        "xpath", '//*[@id="SELECT_DT"]')  # 현재 년도와 월 그리고 일 함께 가져오기
-    now_year_month = elm.get_attribute('value')  # elm에서 value만 빼내기
-    # value를 - 기준으로 나누고 정수로 변환
-    split_year_month = list(map(int, now_year_month.split('-')))
-    return (split_year_month)
+total_start_runtime = time.time()
 
 
 print('크롤러 시작')
 PROJECT_DIR = str(os.path.dirname(os.path.abspath(__file__)))
 DOWNLOAD_DIR = f'{PROJECT_DIR}/download'
 DATABASE_DIR = f'{PROJECT_DIR}/database'
-driver_path = f'{PROJECT_DIR}/lib/webDriver/'
+DRIVER_DIR = f'{PROJECT_DIR}/lib/webDriver/'
+CORE_DIR = f'{PROJECT_DIR}/core/'
 
-total_start_runtime = time.time()
 electricity_time_columns_15 = []
 current_time = datetime.datetime(2020, 1, 1)
 for i in range(15, 24*60, 15):
@@ -83,19 +73,19 @@ electricity_time_columns_60.append('MAX x 4')
 platform = sys.platform
 if platform == 'linux':
     print('시스템 플랫폼: 리눅스')
-    driver_path += 'chromedriver_Lin64'
+    DRIVER_DIR += 'chromedriver_Lin64'
 elif platform == 'darwin':
     print('시스템 플랫폼: 맥')
-    driver_path += 'chromedriver_Mac64'
+    DRIVER_DIR += 'chromedriver_Mac64'
 elif platform == 'win32':
     print('시스템 플랫폼: 윈도우')
-    driver_path += 'chromedriver_Win32'
+    DRIVER_DIR += 'chromedriver_Win32'
 else:
     print(f'[{sys.platform}] 시스템 플랫폼 확인 바람. 지원되지 않음.')
     raise Exception()
 
 browser = generate_chrome(
-    driver_path=driver_path,
+    driver_path=DRIVER_DIR,
     headless=False,
     download_path=DOWNLOAD_DIR)
 
@@ -213,16 +203,14 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
             total_max = 0.0
             print("1시간 단위 테이블, 전반부 연산")
             for index, value in enumerate(rows_60):
-                head = value.find_elements(By.TAG_NAME, "th")[0]
-                body = value.find_elements(By.TAG_NAME, "td")[0]
+                head, body = web_head_n_body(value, 0, 0)
                 cells = float(body.text.replace(",", ""))
                 electricity_list_60.append(cells)
                 max_temp.append(cells)
                 sum_60 += cells
             print("1시간 단위 테이블, 후반부 연산")
             for index, value in enumerate(rows_60):
-                head = value.find_elements(By.TAG_NAME, "th")[1]
-                body = value.find_elements(By.TAG_NAME, "td")[7]
+                head, body = web_head_n_body(value, 1, 7)
                 cells = float(body.text.replace(",", ""))
                 electricity_list_60.append(cells)
                 max_temp.append(cells)
@@ -257,13 +245,14 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
             total_max = 0.0
             print("15분 단위 테이블, 전반부 연산")
             for index, value in enumerate(rows_15):
-                head = value.find_elements(By.TAG_NAME, "th")[0]
-                body = value.find_elements(By.TAG_NAME, "td")[0]
+                head, body = web_head_n_body(value, 0, 0)
+                
                 cells = float(body.text.replace(",", ""))
                 electricity_list_15.append(cells)
-                sum_15 += cells
-                four_sum += cells
                 max_temp.append(cells)
+                sum_15 += cells
+                
+                four_sum += cells
                 f += 1
                 if f > 4:
                     four_max = max(max_temp)
@@ -280,13 +269,14 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
 
             print("15분 단위 테이블, 후반부 연산")
             for index, value in enumerate(rows_15):
-                head = value.find_elements(By.TAG_NAME, "th")[1]
-                body = value.find_elements(By.TAG_NAME, "td")[7]
+                head, body = web_head_n_body(value, 1, 7)
+                
                 cells = float(body.text.replace(",", ""))
                 electricity_list_15.append(cells)
-                sum_15 += cells
-                four_sum += cells
                 max_temp.append(cells)
+                sum_15 += cells
+                
+                four_sum += cells
                 f += 1
                 if f > 4:
                     four_max = max(max_temp)
