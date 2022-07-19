@@ -23,28 +23,45 @@ from selenium.webdriver.common.by import By
 
 from core.chromewebdriver import generate_chrome
 from core.dataUser import siteURL, siteID, sitePW
-from core.dataDirectory import *
 from core.newExplore import *
-
 
 from datetime import timedelta
 from dateutil import relativedelta
+
+PROJECT_DIR = str(os.path.dirname(os.path.abspath(__file__)))
+DOWNLOAD_DIR = f'{PROJECT_DIR}/download'
+DATABASE_DIR = f'{PROJECT_DIR}/database'
+DRIVER_DIR = f'{PROJECT_DIR}/lib/webDriver/'
+CORE_DIR = f'{PROJECT_DIR}/core/'
 
 SELECTYEAR = 2021  # 크롤링이 시작될 년 선택 - 기본값 2022
 RANGEMONTH = 12  # 크롤링할 개월 수(끝나는 기간 아님) - 기본값 12
 SELECTMONTH = 6  # 크롤링이 시작될 월 선택 - 기본값 3
 STARTDAY = 1  # 크롤링이 시작되는 날 - 기본값 1
 
+def getMonthRange(year, month):
+    this_month = datetime.datetime(year=year, month=month, day=1).date()
+    next_month = this_month + relativedelta.relativedelta(months=1)
+    last_day = next_month - timedelta(days=1)
+    return (last_day.day)
 
-total_start_runtime = time.time()
+
+def splitTimes():
+    elm = browser.find_element(
+        "xpath", '//*[@id="SELECT_DT"]')  # 현재 년도와 월 그리고 일 함께 가져오기
+    now_year_month = elm.get_attribute('value')  # elm에서 value만 빼내기
+    # value를 - 기준으로 나누고 정수로 변환
+    split_year_month = list(map(int, now_year_month.split('-')))
+    return (split_year_month)
+
+def web_head_n_body(value, head_n, body_n):
+    temp_head = value.find_elements(By.TAG_NAME, "th")[head_n]
+    temp_body = value.find_elements(By.TAG_NAME, "td")[body_n]
+    return temp_head, temp_body
 
 
 print('크롤러 시작')
-PROJECT_DIR = str(os.path.dirname(os.path.abspath(__file__)))
-DOWNLOAD_DIR = f'{PROJECT_DIR}/download'
-DATABASE_DIR = f'{PROJECT_DIR}/database'
-DRIVER_DIR = f'{PROJECT_DIR}/lib/webDriver/'
-CORE_DIR = f'{PROJECT_DIR}/core/'
+total_start_runtime = time.time()
 
 electricity_time_columns_15 = []
 current_time = datetime.datetime(2020, 1, 1)
