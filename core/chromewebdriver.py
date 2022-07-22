@@ -26,7 +26,7 @@ def close_chrome(chrome: webdriver):
 def generate_chrome(
     driver_path: str,
     download_path: str,
-    headless: bool=False
+    headless: bool=False #크롬 창 숨기기(False: 안숨기기 / True:숨기기)
     ) -> webdriver:
 
     options = webdriver.ChromeOptions()

@@ -35,8 +35,8 @@ DRIVER_DIR = f'{PROJECT_DIR}/lib/webDriver/'
 CORE_DIR = f'{PROJECT_DIR}/core/'
 
 SELECTYEAR = 2021  # 크롤링이 시작될 년 선택 - 기본값 2022
-RANGEMONTH = 12  # 크롤링할 개월 수(끝나는 기간 아님) - 기본값 12
-SELECTMONTH = 6  # 크롤링이 시작될 월 선택 - 기본값 3
+RANGEMONTH = 8  # 크롤링할 개월 수(끝나는 기간 아님) - 기본값 12
+SELECTMONTH = 12  # 크롤링이 시작될 월 선택 - 기본값은... 회사마다 다르기에 1이 기본값
 STARTDAY = 1  # 크롤링이 시작되는 날 - 기본값 1
 
 def getMonthRange(year, month):
@@ -187,8 +187,18 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
                 "xpath", '//a[@class="ui-state-default ui-state-hover" and text()="{0}"]'.format(str(j))).click()  # 날짜 찾아서 집어넣기
             elm = browser.find_element(
                 "xpath", '//*[@id="txt"]/div[2]/div/p[2]/span[1]/a').click()  # 조회 버튼 누르기
-            print("다음 날로 이동")
-
+        except:
+            print('선택 구간에서 예외가 발생했습니다.')
+            elm = browser.find_element(
+                "xpath", '//a[@class="ui-state-default ui-state-highlight" and text()="{0}"]'.format(str(j)))
+            ActionChains(browser).move_to_element(elm).perform()
+            elm = browser.find_element(
+                "xpath", '//a[@class="ui-state-default ui-state-highlight ui-state-hover" and text()="{0}"]'.format(str(j))).click()  # 날짜 찾아서 집어넣기
+            elm = browser.find_element(
+                "xpath", '//*[@id="txt"]/div[2]/div/p[2]/span[1]/a').click()  # 조회 버튼 누르기
+            
+        print("다음 날로 이동")
+        try:
             time.sleep((random.uniform(3, 4.5)))
             pass_text = browser.find_element("xpath", '//td[@id="F_AP_QT"]').text
             if pass_text == "0.00 kWh":
@@ -337,7 +347,7 @@ for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
             day_runtime_second = str(datetime.timedelta(seconds=(time.time() - day_start_runtime))).split(".")
             print("일일 작업 시간: {0}".format(day_runtime_second[0]))
         except:
-            print('예외가 발생했습니다.')
+            print('추출 구간에서 예외가 발생했습니다.')
     end_days = splitTimes()
     print("====================")
     print("다음 달로 이동")
