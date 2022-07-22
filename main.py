@@ -7,6 +7,7 @@
 #프로그램이 제어하는 크로미움 브라우저에 손을 대는 것을 비권장합니다.
 
 import os
+import shutil
 import sys
 import gc
 import time
@@ -52,6 +53,10 @@ def main():
     print('크롤러 시작')
     SELECTYEAR, SELECTMONTH, RANGEMONTH, STARTDAY, BROWERNOTVIEW = setConfig()
     PROJECT_DIR, DOWNLOAD_DIR, DATABASE_DIR, DRIVER_DIR, CORE_DIR = setDirectory()
+
+    delete_file_path = "database/__electDataTEMP.xlsx" #시작 전 임시 엑셀 파일 삭제
+    if os.path.exists(delete_file_path):
+        os.remove(delete_file_path)
 
     total_start_runtime = time.time()
 
@@ -157,16 +162,16 @@ def main():
     # electricity_list_sum_15 = []
     # electricity_list_max_15 = []
 
-    electricity_df_60_transpose = pd.DataFrame(
-        index=electricity_time_columns_60).transpose()
-    electricity_df_15_transpose = pd.DataFrame(
-        index=electricity_time_columns_15).transpose()
     print("초기화 작업 완료")
 
     for i in range(1, RANGEMONTH+1):  # 탐색이 이루어지는 개월 범위
         month_start_runtime = time.time()
         electricity_df_60 = pd.DataFrame(index=electricity_time_columns_60)
         electricity_df_15 = pd.DataFrame(index=electricity_time_columns_15)
+        electricity_df_60_transpose = pd.DataFrame(
+            index=electricity_time_columns_60).transpose()
+        electricity_df_15_transpose = pd.DataFrame(
+            index=electricity_time_columns_15).transpose()
         number_day = getMonthRange(split_year_month[0], split_year_month[1])
         for j in range(STARTDAY, number_day+1):  # 탐색이 이루어지는 요일 범위
             day_start_runtime = time.time()
@@ -365,11 +370,22 @@ def main():
         gc.collect()
 
         print("월간, 임시 데이터 저장 중...")
-        with pd.ExcelWriter('database/__electDataTEMP.xlsx', mode='w', engine='openpyxl') as writer:
-            electricity_df_60_transpose.to_excel(
-                writer, index=True, sheet_name='hour_1')
-            electricity_df_15_transpose.to_excel(
-                writer, index=True, sheet_name='minute_15')
+        if not os.path.exists('database/__electDataTEMP.xlsx'):
+            print("파일을 생성...")
+            with pd.ExcelWriter('database/__electDataTEMP.xlsx', mode='w', engine='openpyxl') as writer:
+                electricity_df_60_transpose.to_excel(
+                    writer, index=True, sheet_name='hour_1')
+                electricity_df_15_transpose.to_excel(
+                    writer, index=True, sheet_name='minute_15')
+        else:
+            print("파일에 추가...")
+            with pd.ExcelWriter('database/__electDataTEMP.xlsx', mode='a', engine='openpyxl', if_sheet_exists='overlay') as writer:
+                electricity_df_60_transpose.to_excel(
+                    writer, index=True, sheet_name='hour_1', startrow=writer.sheets['hour_1'].max_row, header=None)
+                electricity_df_15_transpose.to_excel(
+                    writer, index=True, sheet_name='minute_15', startrow=writer.sheets['minute_15'].max_row, header=None)
+        del [[electricity_df_60_transpose, electricity_df_15_transpose]]
+        gc.collect()
         print("월간, 임시 데이터 저장 완료")
         month_runtime_second = str(datetime.timedelta(seconds=(time.time() - month_start_runtime))).split(".")
         print("월간 작업 시간: {0}".format(month_runtime_second[0]))   
@@ -378,12 +394,15 @@ def main():
     end_days_str = "".join(map(str, end_days))
 
     print("최종 데이터 저장 중...")
-    with pd.ExcelWriter('database/electData__{0}_{1}.xlsx'.format(
-            first_days_str, end_days_str), mode='w', engine='openpyxl') as writer:
-        electricity_df_60_transpose.to_excel(
-            writer, index=True, sheet_name='hour_1')
-        electricity_df_15_transpose.to_excel(
-            writer, index=True, sheet_name='minute_15')
+    
+    shutil.copy2("database/__electDataTEMP.xlsx", 'database/electData__{0}_{1}.xlsx'.format(
+            first_days_str, end_days_str))
+    # with pd.ExcelWriter('database/electData__{0}_{1}.xlsx'.format(
+    #         first_days_str, end_days_str), mode='w', engine='openpyxl') as writer:
+    #     electricity_df_60_transpose.to_excel(
+    #         writer, index=True, sheet_name='hour_1')
+    #     electricity_df_15_transpose.to_excel(
+    #         writer, index=True, sheet_name='minute_15')
     print("최종 데이터 저장 완료")
     total_runtime_second = str(datetime.timedelta(seconds=(time.time() - total_start_runtime))).split(".")
     print("전체 작업 시간: {0}".format(total_runtime_second[0]))
